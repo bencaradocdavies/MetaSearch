@@ -37,6 +37,7 @@ WFS_LINK_TYPES = [
     'OGC:WFS',
     'OGC:WFS-1.0.0-http-get-capabilities',
     'OGC:WFS-1.1.0-http-get-capabilities',
+    'OGC:WFS-1.1.0-http-get-feature',
     'urn:x-esri:specification:ServiceType:wfs:url',
     'urn:x-esri:specification:ServiceType:Gmd:URL.wfs'
 ]
@@ -44,6 +45,7 @@ WFS_LINK_TYPES = [
 WCS_LINK_TYPES = [
     'OGC:WCS',
     'OGC:WCS-1.1.0-http-get-capabilities',
+    'OGC:WCS-1.0.0-http-get-coverage',
     'urn:x-esri:specification:ServiceType:wcs:url',
     'urn:x-esri:specification:ServiceType:Gmd:URL.wcs'
 ]
