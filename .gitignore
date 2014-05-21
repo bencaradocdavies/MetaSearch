@@ -16,3 +16,7 @@ plugin/MetaSearch/ext-libs
 plugin/MetaSearch/ui/*.py
 
 docs/_build
+
+.project
+.pydevproject
+.settings/

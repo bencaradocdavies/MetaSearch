@@ -28,19 +28,22 @@
 #
 ###############################################################################
 
-import json
-import os.path
-from urllib2 import build_opener, install_opener, ProxyHandler
-
 from PyQt4.QtCore import QSettings, Qt, SIGNAL, SLOT
 from PyQt4.QtGui import (QApplication, QColor, QCursor, QDialog,
                          QDialogButtonBox, QMessageBox, QTreeWidgetItem,
                          QWidget)
-
+import json
+import os.path
 from qgis.core import (QgsApplication, QgsCoordinateReferenceSystem,
                        QgsCoordinateTransform, QgsGeometry, QgsPoint,
-                       QgsProviderRegistry)
+                       QgsProviderRegistry, QgsVectorLayer, QgsMapLayerRegistry)
 from qgis.gui import QgsRubberBand
+import random
+import re
+import string
+import tempfile
+import urllib
+from urllib2 import build_opener, install_opener, ProxyHandler
 
 from owslib.csw import CatalogueServiceWeb
 from owslib.fes import BBox, PropertyIsLike
@@ -58,6 +61,7 @@ from MetaSearch.dialogs.xmldialog import XMLDialog
 from MetaSearch.util import (get_connections_from_file, get_ui_class,
                              highlight_xml, open_url, render_template,
                              StaticContext)
+
 
 BASE_CLASS = get_ui_class('maindialog.ui')
 
@@ -543,8 +547,11 @@ class MetaSearchDialog(QDialog, BASE_CLASS):
                 dst = self.map.mapRenderer().destinationCrs()
                 ctr = QgsCoordinateTransform(src, dst)
                 geom = QgsGeometry.fromPolygon(points)
-                geom.transform(ctr)
-                self.rubber_band.setToGeometry(geom, None)
+                try:
+                    geom.transform(ctr)
+                    self.rubber_band.setToGeometry(geom, None)
+                except:
+                    pass
 
         # figure out if the data is interactive and can be operated on
         self.find_services(record, item)
@@ -667,7 +674,9 @@ class MetaSearchDialog(QDialog, BASE_CLASS):
                 except Exception, err:
                     ows = WebMapTileService(data_url)
             elif service_type == 'OGC:WFS':
-                ows = WebFeatureService(data_url)
+                add_wfs_layer(data_url)
+                QApplication.restoreOverrideCursor()
+                return
             elif service_type == 'OGC:WCS':
                 # TODO: remove version once OWSLib defaults to 1.0.0
                 ows = WebCoverageService(data_url, '1.0.0')
@@ -921,3 +930,20 @@ def bbox_to_polygon(bbox):
         ]]
     else:
         return None
+
+def add_wfs_layer(url):
+    url = re.sub("outputformat=[^&]+", "", url, flags=re.I)
+    url = re.sub("version=[^&]+", "version=1.1.0", url, flags=re.I)
+    url = re.sub("typenames", "typename", url, flags=re.I)
+    host = re.search("http://([^/:]+)", url).group(1)
+    typename = re.search("typename=([^&]+)", url, flags=re.I).group(1)
+    title = "%s - %s" % (typename, host)
+    tempdir = os.path.join(tempfile.gettempdir(),'qgis-MetaSearch')
+    if not os.path.exists(tempdir):
+        os.makedirs(tempdir)
+    s = "".join(random.choice(string.ascii_lowercase + string.digits) for dummy in range(16))
+    tempfilename = os.path.join(tempdir, "wfs.{0}.gml".format(s))
+    urllib.urlretrieve(url, tempfilename)
+    layer = QgsVectorLayer(tempfilename, title, "ogr")
+    layer.setProviderEncoding("UTF-8")
+    QgsMapLayerRegistry.instance().addMapLayers([layer])
