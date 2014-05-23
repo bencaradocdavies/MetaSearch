@@ -935,6 +935,7 @@ def add_wfs_layer(url):
     url = re.sub("outputformat=[^&]+", "", url, flags=re.I)
     url = re.sub("version=[^&]+", "version=1.1.0", url, flags=re.I)
     url = re.sub("typenames", "typename", url, flags=re.I)
+    url = url + "&maxfeatures=100"
     host = re.search("http://([^/:]+)", url).group(1)
     typename = re.search("typename=([^&]+)", url, flags=re.I).group(1)
     title = "%s - %s" % (typename, host)
